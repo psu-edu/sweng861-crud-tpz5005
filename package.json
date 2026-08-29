@@ -4,9 +4,7 @@
   "description": "Thomas Zimmerman SWENG861 - Software Construction",
   "main": "index.js",
   "scripts": {
-    "dev:vite": "vite",
-    "dev:python": "uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000",
-    "dev": "concurrently -k -n \"VITE,FASTAPI\" -c \"cyan,yellow\" \"npm run dev:vite\" \"npm run dev:python\"",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
