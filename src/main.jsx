@@ -13,6 +13,8 @@ function ApiInterface() {
     const [helloData, setHelloData] = useState(null);
     // Holds response for health backend calls
     const [healthData, setHealthData] = useState(null);
+    //Debug error message
+    const [errorMsg, setErrorMsg] = useState(null);
 
     // Gets 'hello' data form backend
     //------------------------------------------/
@@ -25,6 +27,7 @@ function ApiInterface() {
                 })
                 .catch(error => {
                     console.error('Failed to fetch "hello" data:', error);
+                    setErrorMsg(error.message);
                 });
     }, []);
 
@@ -39,6 +42,7 @@ function ApiInterface() {
                 })
                 .catch(error => {
                     console.error('Failed to fetch "health" data:', error);
+                    setErrorMsg(error.message);
                 });
     }, []);
 
@@ -48,16 +52,22 @@ function ApiInterface() {
         <div style = {{  padding: '20px', fontFamily: 'Arial, sans-serif' }}>
             <h1 style = {styles.heading}> Week 1 Assignment 3</h1>
 
+            {errorMsg && (
+                <div style={{ color: 'red', marginBottom: '20px' }}>
+                    <strong> Fetch Error: </strong> {errorMsg}
+                </div>
+            )}
+
             <div style = { styles.card}>
                 <h2 style = {styles.subHeading}>Hello API Response</h2>
-                <pre style = {styles.codeblock}>
+                <pre style = {styles.codeBlock}>
                     {helloData ? JSON.stringify(helloData, null, 2) : 'Getting hello data...'}
                 </pre>
             </div>
 
             <div style = {styles.card}>
                 <h2 style = {styles.subHeading}>Health API Response</h2>
-                <pre style={styles.codeblock}>
+                <pre style={styles.codeBlock}>
                     {healthData ? JSON.stringify(healthData, null, 2) : 'Getting health data...'}
                 </pre>
             </div>
