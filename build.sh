@@ -13,6 +13,9 @@ npm install
 echo "------------------------------------------"
 echo "Setting up Python venv..."
 echo "------------------------------------------"
+apt install python3-pip -y python3-venv
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 
 echo "------------------------------------------"
