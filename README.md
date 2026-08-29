@@ -11,11 +11,11 @@ This is the feature branch. It will be used for development, bug fixes.
 
 ## Tech Stack
 -Node.js
--React
+-FastAPI
 -PostgreSQL
 
 ## How to clone
 git clone https://github.com/psu-edu/sweng861-crud-tpz5005
 
 ## How to run
-npm run start
+npm run dev
