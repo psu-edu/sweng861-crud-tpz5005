@@ -9,14 +9,20 @@ echo " Installing npm..."
 echo "------------------------------------------"
 npm ci
 npm install
+npm run build
 
 echo "------------------------------------------"
 echo "Setting up Python venv..."
 echo "------------------------------------------"
-apt install python3-pip -y python3-venv
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install --upgrade pip
+pip install fastapi uvicorn
+
+echo "------------------------------------------"
+echo "Setting up backend..."
+echo "------------------------------------------"
+nohup uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1 &
 
 echo "------------------------------------------"
 echo "Installation Complete!"
