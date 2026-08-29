@@ -11,7 +11,11 @@ based on amount requested and available funds.
 
 ## Tech Stack
 -Node.js
+
+-Vite
+
 -FastAPI
+
 -PostgreSQL
 
 ## How to clone
