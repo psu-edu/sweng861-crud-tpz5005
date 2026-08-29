@@ -21,5 +21,8 @@ pip install fastapi uvicorn
 
 echo "------------------------------------------"
 echo "Installation Complete!"
+echo "------------------------------------------"
+
+echo "------------------------------------------"
 echo "To run enter this command: npm run dev"
 echo "------------------------------------------"
