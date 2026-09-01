@@ -24,9 +24,7 @@ git clone git@github.com:psu-edu/sweng861-crud-tpz5005.git
 ## How to Build
 cd sweng861-crud-tpz5005/
 
-chmod a+x build.sh
-
-./build.sh
+source build.sh
 
 ## How to run
-npm run dev
+npm run start-all
