@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 app = FastAPI()
 
@@ -23,3 +24,9 @@ def health_status():
     return {"status": "ok"}
 
 #################################################
+
+# Launch the backend server apon startup of the application
+if __name__ == "__main__":
+    HOST = "0.0.0.0"
+    PORT = 8000
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
