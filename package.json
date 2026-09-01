@@ -4,7 +4,9 @@
   "description": "Thomas Zimmerman SWENG861 - Software Construction",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "backend": "python backend/main.py",
+    "start": "vite",
+    "start-all": "concurrently \"npm run start\" \"npm run backend\"",
     "build": "vite build",
     "preview": "vite preview"
   },
