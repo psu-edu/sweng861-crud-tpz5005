@@ -22,7 +22,7 @@ function ApiInterface() {
     //------------------------------------------/
     useEffect(() => { 
     //------------------------------------------/
-        fetch('http://127.0.0.1:8000/api/user', {credentials: 'include'})
+        fetch('http://localhost:8000/api/user', {credentials: 'include'})
             .then(response => response.json())
                 .then(data => {
                     setUserData(data);
@@ -37,7 +37,7 @@ function ApiInterface() {
     //------------------------------------------/
     useEffect(() => { 
     //------------------------------------------/
-        fetch('http://127.0.0.1:8000/api/hello')
+        fetch('http://localhost:8000/api/hello', {credentials: 'include'})
             .then(response => response.json())
                 .then(data => {
                     setHelloData(data);
@@ -53,7 +53,7 @@ function ApiInterface() {
     //------------------------------------------/
     useEffect(() => { 
     //------------------------------------------/
-        fetch('http://127.0.0.1:8000/health', {credentials: 'include'})
+        fetch('http://localhost:8000/health')
             .then(response => response.json())
                 .then(data => {
                     setHealthData(data);
@@ -83,7 +83,7 @@ function ApiInterface() {
                 {userData?.authenticated ? (
                     /* Rendered when the user has successfully logged in via OAuth */
                     <div>
-                        <p><strong>Welcome back, {userData.user.name || userData.user.username}!</strong></p>
+                        <p><strong>Hello, {userData.user.name || userData.user.username}!</strong></p>
                         {userData.user.avatar_url && (
                             <img 
                                 src={userData.user.avatar_url} 
@@ -94,7 +94,7 @@ function ApiInterface() {
                         )}
                         <br />
                         {/* Logout Button */}
-                        <a href="http://127.0.0.1:8000/auth/logout" style={styles.logoutButton}>
+                        <a href="http://localhost:8000/auth/logout" style={styles.logoutButton}>
                             Log Out
                         </a>
                     </div>
@@ -103,7 +103,7 @@ function ApiInterface() {
                     <div>
                         <p>You are not logged in.</p>
                         {/* Login Button */}
-                        <a href="http://127.0.0.1:8000/auth/login" style={styles.loginButton}>
+                        <a href="http://localhost:8000/auth/login" style={styles.loginButton}>
                             Log in with GitHub
                         </a>
                     </div>
