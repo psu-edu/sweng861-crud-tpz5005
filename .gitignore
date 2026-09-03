@@ -47,6 +47,9 @@ venv/
 # PYCache
 __pycache__/
 
+# databade stuff
+*.db
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 
