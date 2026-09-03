@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import Depends, FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -6,12 +7,21 @@ from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse
 import uvicorn
 import pprint
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from database import handle_user_login_data, init_db, print_database_info, get_data_field
 
 init_db()  # Initialize the database
 
+# Create rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI()
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Authlib middleware
 # @info: used to encrypt sessiond ata
@@ -57,9 +67,10 @@ async def get_current_user(request: Request):
 # @info: This is the endpoint that re-directs the user to the external
 #        github login page
 @app.get("/auth/login")
+@limiter.limit("5/minute") # Only 5 logins per minute
 async def login(request: Request):
-    # This origin MUST match the frontend origin, otherwise the cookies
-    # will NOT SET for the frontend!!!!!
+    # This redirect origin MUST match the frontend origin, otherwise 
+    # the cookies will NOT SET for the frontend!!!!!
     redirect_uri = "http://localhost:8000/auth/callback" 
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
