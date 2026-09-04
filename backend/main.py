@@ -10,10 +10,14 @@ import pprint
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from dotenv import load_dotenv
 
 from database import handle_user_login_data, init_db, print_database_info, get_data_field
 
+load_dotenv() # load keys into env
+
 init_db()  # Initialize the database
+
 
 # Create rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -50,8 +54,8 @@ oauth = OAuth()
 # I will use github, as that is used commonly for SWENG861
 oauth.register(
     name="github",
-    client_id="Ov23lisvubhy2pCXWy6l", # got this from github
-    client_secret="a5aaa80b59c66ae3a05ba706eadafc0ef9e8627e", # generated from github
+    client_id=os.getenv("GITHUB_CLIENT_ID"),
+    client_secret=os.getenv("GITHUB_CLIENT_SECRET"),
     access_token_url="https://github.com/login/oauth/access_token",
     authorize_url="https://github.com/login/oauth/authorize",
     api_base_url="https://api.github.com/",
