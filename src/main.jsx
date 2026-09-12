@@ -207,7 +207,7 @@ function ApiInterface() {
 
     return (
         <div style = {{  padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-            <h1 style = {styles.heading}> Week 1 Assignment 3</h1>
+            <h1 style = {styles.heading}> Week 3 Assignment</h1>
 
             {/* Debug banner */}
             {errorMsg && (
@@ -248,21 +248,23 @@ function ApiInterface() {
                     </div>
                 )}
             </div>
-         
-            {/* Hello endpoint */}
-            <div style = { styles.card}>
-                <h2 style = {styles.subHeading}>Hello API Response</h2>
-                <pre style = {styles.codeBlock}>
-                    {helloData ? JSON.stringify(helloData, null, 2) : 'Getting hello data...'}
-                </pre>
-            </div>
             
-            {/* Health Endpoint */}
-            <div style = {styles.card}>
-                <h2 style = {styles.subHeading}>Health API Response</h2>
-                <pre style={styles.codeBlock}>
-                    {healthData ? JSON.stringify(healthData, null, 2) : 'Getting health data...'}
-                </pre>
+            <div style={{ display: 'flex', gap: '20px' }}>
+                {/* Hello endpoint */}
+                <div style = {{ ...styles.card, flex: 1, marginTop: 0}}>
+                    <h2 style = {styles.subHeading}>Hello API Response</h2>
+                    <pre style = {styles.codeBlock}>
+                        {helloData ? JSON.stringify(helloData, null, 2) : 'Getting hello data...'}
+                    </pre>
+                </div>
+                
+                {/* Health Endpoint */}
+                <div style = {{ ...styles.card, flex: 1, marginTop: 0}}>
+                    <h2 style = {styles.subHeading}>Health API Response</h2>
+                    <pre style={styles.codeBlock}>
+                        {healthData ? JSON.stringify(healthData, null, 2) : 'Getting health data...'}
+                    </pre>
+                </div>
             </div>
 
             {/* OSRS Endpoint */}
@@ -314,59 +316,63 @@ function ApiInterface() {
                     <button type="submit" style={styles.button}>Create Item</button>
                 </form>
             </div>
+            
+            <div style={{ display: 'flex', gap: '20px' }}>
+                {/* OSRS Delete Form */}
+                <div style={{ ...styles.card, flex: 1, marginTop: 0}}>
+                    <h2 style={styles.subHeading}>Delete OSRS Item (OSRS Database)</h2>
+                    <form onSubmit={handleDeleteItem} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                            <label style={styles.label}>Item to delete (4-number id):</label>
+                            <input 
+                                type="number" 
+                                value={itemToDelete} 
+                                onChange={(e) => setItemToDelete(e.target.value)}
+                                placeholder="Check 'Current OSRS dataBase IDs' for current IDs" 
+                                style={styles.input}
+                                required 
+                            />
+                        </div>
+                        {/* DELETE BUTTON */}
+                        <button type="submit" style={styles.button}>Delete Item</button>
+                    </form>
+                </div>
 
-            {/* OSRS Delete Form */}
-            <div style={styles.card}>
-                <h2 style={styles.subHeading}>Delete OSRS Item (OSRS Database)</h2>
-                <form onSubmit={handleDeleteItem} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div>
-                        <label style={styles.label}>Item to delete (4-number id):</label>
-                        <input 
-                            type="number" 
-                            value={itemToDelete} 
-                            onChange={(e) => setItemToDelete(e.target.value)}
-                            placeholder="Check 'Current OSRS dataBase IDs' for current IDs" 
-                            style={styles.input}
-                            required 
-                        />
-                    </div>
-                    {/* DELETE BUTTON */}
-                    <button type="submit" style={styles.button}>Delete Item</button>
-                </form>
+                {/* OSRS Delete ALL Form */}
+                <div style={{ ...styles.card, flex: 1, marginTop: 0}}>
+                    <h2 style={styles.subHeading}>Delete ALL Items</h2>
+                    <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px', marginTop: '0' }}>
+                        Requires Admin privileges. This will wipe the ENITRE OSRS items table.
+                    </p>
+                    <button onClick={handleDeleteAll} style={styles.dangerButton}>
+                        Delete All Items
+                    </button>
+
+                    {/* Show the status of the delete-all request if it exists */}
+                    {deleteAllStatus && (
+                        <pre style={{...styles.codeBlock, marginTop: '12px'}}>
+                            {JSON.stringify(deleteAllStatus, null, 2)}
+                        </pre>
+                    )}
+                </div>
             </div>
-
-            {/* OSRS Delete ALL Form (Danger Zone) */}
-            <div style={styles.card}>
-                <h2 style={styles.subHeading}>Danger Zone: Delete ALL Items</h2>
-                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px', marginTop: '0' }}>
-                    Requires Admin privileges. This will wipe the entire OSRS items table.
-                </p>
-                <button onClick={handleDeleteAll} style={styles.dangerButton}>
-                    Delete All Items
-                </button>
-
-                {/* Show the status of the delete-all request if it exists */}
-                {deleteAllStatus && (
-                    <pre style={{...styles.codeBlock, marginTop: '12px'}}>
-                        {JSON.stringify(deleteAllStatus, null, 2)}
+            
+            <div style={{ display: 'flex', gap: '20px' }}>
+                {/* OSRS Database Create Status return */}
+                <div style={{ ...styles.card, flex: 1, marginTop: 0}}>
+                    <h2 style={styles.subHeading}>Current OSRS database IDs</h2>
+                    <pre style={styles.codeBlock}>
+                        {registeredIds ? JSON.stringify(registeredIds, null, 2) : 'No IDs registered yet...'}
                     </pre>
-                )}
-            </div>
+                </div>
 
-            {/* OSRS Database Create Status return */}
-            <div style={styles.card}>
-                <h2 style={styles.subHeading}>Current OSRS database IDs</h2>
-                <pre style={styles.codeBlock}>
-                    {registeredIds ? JSON.stringify(registeredIds, null, 2) : 'No IDs registered yet...'}
-                </pre>
-            </div>
-
-            {/* OSRS Database Create Status return */}
-            <div style={styles.card}>
-                <h2 style={styles.subHeading}>OSRS Create Status</h2>
-                <pre style={styles.codeBlock}>
-                    {createStatus ? JSON.stringify(createStatus, null, 2) : 'No OSRS Database Create status yet...'}
-                </pre>
+                {/* OSRS Database Create Status return */}
+                <div style={{ ...styles.card, flex: 1, marginTop: 0}}>
+                    <h2 style={styles.subHeading}>OSRS Create Status</h2>
+                    <pre style={styles.codeBlock}>
+                        {createStatus ? JSON.stringify(createStatus, null, 2) : 'No OSRS Database Create status yet...'}
+                    </pre>
+                </div>
             </div>
 
         </div>
