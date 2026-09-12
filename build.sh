@@ -1,28 +1,29 @@
 #!/bin/bash
 
 echo "------------------------------------------"
-echo "Building the project..."
+echo "Preparing Environment..."
 echo "------------------------------------------"
 
-echo "------------------------------------------"
-echo " Installing npm..."
-echo "------------------------------------------"
-npm ci
-npm install
-npm run build
+# Generate local SSL certificates
+if [ ! -f "backend/cert.pem" ] || [ ! -f "backend/key.pem" ]; then
+    echo "No SSL certificates found. Generating local certs for development..."
+    openssl req -x509 -newkey rsa:4096 -nodes \
+        -out backend/cert.pem -keyout backend/key.pem \
+        -days 365 -subj "/CN=localhost"
+else
+    echo "SSL certificates already exist. Skipping generation."
+fi
 
 echo "------------------------------------------"
-echo "Setting up Python venv..."
+echo "Building with Docker..."
 echo "------------------------------------------"
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install fastapi uvicorn
+docker-compose build --no-cache
 
 echo "------------------------------------------"
-echo "Installation Complete!"
+echo "Building Complete!"
+echo "To start the application... "
+echo "enter this command: docker-compose up"
 echo "------------------------------------------"
 
-echo "------------------------------------------"
-echo "To run enter this command: npm run start-all"
-echo "------------------------------------------"
+
+
