@@ -14,6 +14,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             provider_id TEXT UNIQUE NOT NULL,
             email TEXT,
+            role TEXT NOT NULL DEFAULT 'user',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -50,7 +51,9 @@ def handle_user_login_data(user_profile_data: dict) -> dict:
 
 # Creates a new user in the database
 #-----------------------------------------------#
-def create_user(provider_id: str, email: str | None) -> dict:
+def create_user(provider_id: str, 
+                email: str | None, 
+                role: str = "user") -> dict:
 #-----------------------------------------------#
     # get the current time
     now = datetime.now(timezone.utc).isoformat()
@@ -61,9 +64,9 @@ def create_user(provider_id: str, email: str | None) -> dict:
 
     # insert the new user information
     cursor.execute("""
-        INSERT INTO users (provider_id, email, created_at, updated_at)
-        VALUES (?, ?, ?, ?)
-    """, (provider_id, email, now, now))
+        INSERT INTO users (provider_id, email, role, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (provider_id, email, role, now, now))
     user_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -71,6 +74,7 @@ def create_user(provider_id: str, email: str | None) -> dict:
     return {"id": user_id,
             "provider_id": provider_id, 
             "email": email,
+            "role": role,
             "creted_at": now,
             "updated_at": now}
 
@@ -106,8 +110,9 @@ def update_user_login(provider_id: str, email: str | None) -> dict:
         "id": row[0],
         "provider_id": row[1],
         "email": row[2],
-        "created_at": row[3],
-        "updated_at": row[4]
+        "role": row[3],
+        "created_at": row[4],
+        "updated_at": row[5]
     }
 
 # Get function that retruns the value of a field
