@@ -141,7 +141,7 @@ async def handle_login_rate_exception(request: Request,
     # pretty sure code 429 is the right one here
     return JSONResponse(
         status_code=429,
-        content={"detail": "Login rate exceeded. 5 log ins allowed per minute."}
+        content={"detail": "Endpoint rate limit exceeded!"}
     )
 
 
@@ -429,7 +429,7 @@ def osrs_database_update(request: Request,
 @router.delete("/delete/{item_id}",
                 summary="OSRS database Delete endpoint")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-@limiter.limit("1/5seconds") # Only 1 delete every 5 seconds
+@limiter.limit("1/seconds") # Only 1 delete every 5 seconds
 def osrs_database_delete(request: Request,
                          item_id: int, 
                          user: dict = Depends(require_auth)):
