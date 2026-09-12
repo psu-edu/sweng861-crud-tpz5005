@@ -99,3 +99,16 @@ def delete_item(item_id: int):
             (item_id,)
         )
         connection.commit()
+
+# Delete all items
+#-----------------------------------------------#
+def delete_all_items():
+#-----------------------------------------------#
+    with get_connection() as connection:
+        cursor = connection.cursor()
+
+        # clear the database
+        cursor.execute("DELETE FROM items")
+
+        connection.commit()
+        connection.close()
