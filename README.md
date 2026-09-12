@@ -43,11 +43,8 @@ cd sweng861-crud-tpz5005/
 
 source build.sh
 
-## How to launch python venv
-source .venv/bin/activate
-
 ## How to run
-npm run start-all
+docker-compose up
 
 ### Note
 If you are presented with a "certificate could not be verified" page, click the 'Proceed to localhost' button to continue 
