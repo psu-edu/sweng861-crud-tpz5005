@@ -27,6 +27,7 @@ function ApiInterface() {
     const [createStatus, setCreateStatus] = useState(null); // debug visual for create status
     const [registeredIds, setCurrentIds] = useState(''); // current ids
     const [itemToDelete, setItemToDelete] = useState(''); // delete item function
+    const [deleteAllStatus, setDeleteAllStatus] = useState(null); // Delete all button
 
     // Initiate user login
     //------------------------------------------/
@@ -151,6 +152,34 @@ function ApiInterface() {
                 })
                 .catch(error => {
                     console.error('Failed to create item', error);
+                    setErrorMsg(error.message);
+                });
+    };
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
+    const handleDeleteAll = (evnt) => {
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/   
+        evnt.preventDefault();
+        
+        // Safety check prompt
+        if (!window.confirm("Are you REALLY SURE you want to delete all the OSRS items?")) {
+            return;
+        }
+        
+        // Make sure this URL matches exactly where you mounted the new endpoint
+        fetch(`https://localhost:8000/api/osrs/database/delete-all`, {
+            method: 'DELETE',
+            credentials: 'include'
+        })
+            .then(response => response.json())
+                .then(data => {
+                    setDeleteAllStatus(data);
+                    // Refresh the IDs list on the screen
+                    fetchCurrentIDs();
+                })
+                .catch(error => {
+                    console.error('Failed to delete all items', error);
                     setErrorMsg(error.message);
                 });
     };
@@ -306,6 +335,24 @@ function ApiInterface() {
                 </form>
             </div>
 
+            {/* OSRS Delete ALL Form (Danger Zone) */}
+            <div style={styles.card}>
+                <h2 style={styles.subHeading}>Danger Zone: Delete ALL Items</h2>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px', marginTop: '0' }}>
+                    Requires Admin privileges. This will wipe the entire OSRS items table.
+                </p>
+                <button onClick={handleDeleteAll} style={styles.dangerButton}>
+                    Delete All Items
+                </button>
+
+                {/* Show the status of the delete-all request if it exists */}
+                {deleteAllStatus && (
+                    <pre style={{...styles.codeBlock, marginTop: '12px'}}>
+                        {JSON.stringify(deleteAllStatus, null, 2)}
+                    </pre>
+                )}
+            </div>
+
             {/* OSRS Database Create Status return */}
             <div style={styles.card}>
                 <h2 style={styles.subHeading}>Current OSRS database IDs</h2>
@@ -401,6 +448,15 @@ const styles = {
     button: {
         padding: '10px 16px',
         backgroundColor: '#2563eb',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '4px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+    },
+    dangerButton: {
+        padding: '10px 16px',
+        backgroundColor: '#dc2626',
         color: '#fff',
         border: 'none',
         borderRadius: '4px',
