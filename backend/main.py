@@ -18,7 +18,7 @@ from cachetools import TTLCache, cached
 from cachetools.keys import hashkey
 
 from database import handle_user_login_data, init_db, print_database_info, get_data_field
-from osrsdatabase import init_osrs_db, create_item, read_item, update_item, delete_item, get_all_ids
+from osrsdatabase import init_osrs_db, create_item, read_item, update_item, delete_item, get_all_ids, delete_all_items
 
 load_dotenv() # load keys into env
 
@@ -89,7 +89,7 @@ oauth.register(
 
 # Authentication verification helper function
 #-------------------------------------------------------------------#
-async def require_auth(request: Request):
+async def require_auth(request: Request) -> dict:
 #-------------------------------------------------------------------#
     # get the user info
     user = request.session.get("user")
@@ -101,6 +101,30 @@ async def require_auth(request: Request):
 
     return user
 
+#-------------------------------------------------------------------#
+async def require_admin(current_user: dict = Depends(require_auth)) ->dict:
+#-------------------------------------------------------------------#
+    # If the user is not an admin
+    if current_user.get("role") != "admin":
+        # throw an error
+        raise HTTPException(status_code = status.HTTP_403_FORBIDDEN,
+                                    detail="Admin privlages required")
+    
+    return current_user
+
+#-------------------------------------------------------------------#
+def verify_owner_or_admin(current_user: dict, owner_id: int):
+#-------------------------------------------------------------------#
+    is_owner = current_user["id"] == owner_id
+    is_admin = current_user.get("role") == "admin"
+
+    if not (is_owner or is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to use this endpoint"
+        )
+        
+    return current_user
 
 # Exception handler for excessive log in attempts
 @app.exception_handler(RateLimitExceeded)
@@ -202,7 +226,8 @@ async def auth_callback(request: Request):
             "id": profile_info.get("id"),
             "username": profile_info.get("login"),
             "name": profile_info.get("name"),
-            "avatar_url": profile_info.get("avatar_url")
+            "avatar_url": profile_info.get("avatar_url"),
+            "role": db_user["role"]
         }
 
         # if we are susseccful, redirect back to the frontend
@@ -422,6 +447,25 @@ def osrs_database_delete(request: Request,
     return {
         "status": "success",
         "message": "Item successfully deleted"
+    }
+
+
+# @info: Delete endpoint for the OSRS database
+# @param item_id - the 4 digit id 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@router.delete("/delete-all",
+                summary="OSRS database Delete endpoint")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@limiter.limit("1/5seconds") # Only 1 delete every 5 seconds
+def osrs_database_delete(request: Request,
+                         user: dict = Depends(require_admin)):
+    
+    # clear the entire database
+    delete_all_items()
+
+    return {
+        "status": "success",
+        "message": "OSRS database has been cleared"
     }
 
 
