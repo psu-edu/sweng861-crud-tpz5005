@@ -172,17 +172,14 @@ async def auth_callback(request: Request):
         # authentication token
         auth_token = await oauth.github.authorize_access_token(request)
 
-        print("---------- AUTHENTICATION INFO ----------")
-        pprint.pprint(auth_token)
-        print("----------------------------------")
-
         # With the auth token, ask github for information about user
         response_type = await oauth.github.get("user", token=auth_token)
         profile_info = response_type.json()
 
-        print("---------- PROFILE INFO ----------")
-        pprint.pprint(profile_info)
-        print("----------------------------------")
+        # Saving this for debug purposes
+        # print("---------- PROFILE INFO ----------")
+        # pprint.pprint(profile_info)
+        # print("----------------------------------")
 
         # If the email is private, we need to explicitly ask for an email
         # to recover any information
@@ -462,11 +459,26 @@ def print_database(user: dict = Depends(require_auth)):
 
 # Launch the backend server apon startup of the application
 if __name__ == "__main__":
-    HOST = "127.0.0.1"
+    #HOST = "127.0.0.1" # original
+    HOST = "0.0.0.0"
     PORT = 8000
+
+    # for docker
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    cert_path = os.path.join(base_dir, "cert.pem")
+    key_path = os.path.join(base_dir, "key.pem")
+
     uvicorn.run("main:app", 
                 host=HOST, 
                 port=PORT, 
-                reload=True,
-                ssl_certfile="cert.pem",
-                ssl_keyfile="key.pem")
+                reload=False,# original = True
+                ssl_certfile=cert_path,
+                ssl_keyfile=key_path)
+
+    # original
+    # uvicorn.run("main:app", 
+    #                 host=HOST, 
+    #                 port=PORT, 
+    #                 reload=True,
+    #                 ssl_certfile="cert.pem",
+    #                 ssl_keyfile="key.pem")
