@@ -260,7 +260,6 @@ def health_status(user: dict = Depends(require_auth)):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 @app.get("/api/runescape/price")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#@cached(price_cache) # cache the price
 async def get_item_price(user: dict = Depends(require_auth)):
 
     # In the game, each item has a developer-set id
@@ -380,7 +379,7 @@ def osrs_database_read(request: Request,
 # @param fields - the fields to be updated
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 @router.put("/update/{item_id}",
-          summary="OSRS database Update endpoint")
+            summary="OSRS database Update endpoint")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 @limiter.limit("1/5seconds") # Only 1 update every 5 seconds
 def osrs_database_update(request: Request,
@@ -436,7 +435,6 @@ def osrs_database_delete(request: Request,
             summary="OSRS database IDs endpoint")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 @limiter.limit("10/seconds") # This needs to be higher, so 10 every second
-#@cached(id_cache, key=lambda item_id, **kwargs: hashkey(item_id)) # id cache
 def osrs_database_registered_ids(request: Request,
                                  user: dict = Depends(require_auth)):
     # Get the current IDs
