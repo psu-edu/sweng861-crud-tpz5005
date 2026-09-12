@@ -1,4 +1,5 @@
-# NOTE: This dockerfile was leveraged HEAVILY from: https://www.docker.com/blog/how-to-dockerize-react-app/
+# NOTE: This dockerfile was partly-guided from: https://www.docker.com/blog/how-to-dockerize-react-app/
+
 ARG NODE_VERSION=24.19.0-alpine
 
 FROM node:${NODE_VERSION} AS builder
@@ -9,12 +10,13 @@ WORKDIR /app
 # copy node.js' dependencies and build them
 COPY package*.json ./
 
+# From the old build script
 RUN npm install ci
 
 COPY . . 
 
+# Again, from the old build script
 RUN npm run build
-
 
 EXPOSE 3000
 
