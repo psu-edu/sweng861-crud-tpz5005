@@ -32,6 +32,9 @@ For this assignment, I protected endpoint /api/hello. This endpoint cannot be ac
 
 -MySQL
 
+## API Documentation
+For API documentation visit: https://localhost:8000/docs
+
 ## How to clone
 git clone git@github.com:psu-edu/sweng861-crud-tpz5005.git
 
@@ -45,3 +48,8 @@ source .venv/bin/activate
 
 ## How to run
 npm run start-all
+
+### Note
+If you are presented with a "certificate could not be verified" page, click the 'Proceed to localhost' button to continue 
+to the application.
+
