@@ -46,6 +46,8 @@ source build.sh
 ## How to run
 docker-compose up
 
+To open the project, hold Control and click on the 'https://localhost:3000/' link in the terminal
+
 ### Note
 If you are presented with a "certificate could not be verified" page, click the 'Proceed to localhost' button to continue 
 to the application.
