@@ -8,11 +8,12 @@ services:
       dockerfile: backend/Dockerfile.backend
     ports:
       - "8000:8000"
-    #command: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
 
   frontend:
     build: 
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
