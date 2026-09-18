@@ -33,7 +33,8 @@ def init_osrs_db():
             CREATE TABLE IF NOT EXISTS items (
                 id INTEGER PRIMARY KEY,
                 item TEXT NOT NULL,
-                price INTEGER NOT NULL
+                price INTEGER NOT NULL,
+                created_by TEXT NOT NULL
             )
         """)
         connection.commit()
@@ -41,12 +42,15 @@ def init_osrs_db():
 
 # Create
 #-----------------------------------------------#
-def create_item(item_id: int, item_name: str, item_value: int):
+def create_item(item_id: int, 
+                item_name: str, 
+                item_value: int, 
+                created_by: str):
 #-----------------------------------------------#
     with get_connection() as connection:
         connection.execute(
-            "INSERT OR REPLACE INTO items (id, item, price) VALUES (?, ?, ?)",
-            (item_id, item_name, item_value)
+            "INSERT OR REPLACE INTO items (id, item, price, created_by) VALUES (?, ?, ?, ?)",
+            (item_id, item_name, item_value, created_by)
         )
         connection.commit()
 
@@ -57,7 +61,7 @@ def read_item(item_id: int):
     with get_connection() as connection:
         cursor = connection.cursor()
         cursor.execute(
-            "SELECT id, item, price FROM items WHERE id = ?", 
+            "SELECT id, item, price, created_by FROM items WHERE id = ?", 
             (item_id,)
         )
         row = cursor.fetchone()
@@ -101,14 +105,15 @@ def delete_item(item_id: int):
         connection.commit()
 
 # Delete all items
+# Returns the number of items deleted
 #-----------------------------------------------#
-def delete_all_items():
+def delete_all_items() -> int:
 #-----------------------------------------------#
-    with get_connection() as connection:
-        cursor = connection.cursor()
-
-        # clear the database
-        cursor.execute("DELETE FROM items")
-
-        connection.commit()
+    connection = get_connection()
+    try:
+        with connection:
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM items")
+            return cursor.rowcount  # Returns the number of rows deleted
+    finally:
         connection.close()
