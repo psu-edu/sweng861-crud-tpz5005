@@ -21,8 +21,12 @@ docker-compose build --no-cache
 
 echo "------------------------------------------"
 echo "Building Complete!"
+echo "-----"
 echo "To start the application... "
 echo "enter this command: docker-compose up"
+echo "-----"
+echo "To open the project, hold Control and"
+echo "click the link 'https://localhost:3000/'"
 echo "------------------------------------------"
 
 
