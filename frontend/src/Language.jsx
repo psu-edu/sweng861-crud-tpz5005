@@ -117,10 +117,15 @@ export const translations = {
 
 const LanguageContext = createContext();
 
+/***********************************************/
 export function LanguageProvider({ children }) {
+/***********************************************/
+
     const [lang, setLang] = useState('en');
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
     const toggleLanguage = () => {
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
         setLang((prev) => (prev === 'en' ? 'es' : 'en'));
     };
 
