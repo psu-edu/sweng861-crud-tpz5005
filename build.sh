@@ -15,6 +15,27 @@ else
 fi
 
 echo "------------------------------------------"
+echo "Generating custom login key..."
+echo "------------------------------------------"
+
+# Manage .env and CUSTOM_JWT_KEY
+ENV_FILE=".env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "No .env file found. Creating $ENV_FILE..."
+    touch "$ENV_FILE"
+fi
+
+if ! grep -q "^CUSTOM_JWT_KEY=" "$ENV_FILE"; then
+    echo "CUSTOM_JWT_KEY missing. Generating 256-bit key for HS256..."
+    JWT_SECRET=$(openssl rand -hex 32)
+    echo "CUSTOM_JWT_KEY=$JWT_SECRET" >> "$ENV_FILE"
+    echo "CUSTOM_JWT_KEY added to $ENV_FILE."
+else
+    echo "CUSTOM_JWT_KEY already exists in $ENV_FILE. Skipping generation."
+fi
+
+echo "------------------------------------------"
 echo "Building with Docker..."
 echo "------------------------------------------"
 docker-compose build --no-cache
