@@ -7,11 +7,14 @@ const BASE_URL = 'https://localhost:8000';
 /***********************************************/
 export async function apiClient(endpoint, options = {}) {
 /***********************************************/
+    const customToken = localStorage.getItem('token');
+
     const config = {
         ...options,
         credentials: 'include', // Cookie credentials
         headers: {
             'Content-Type': 'application/json',
+            ...(customToken ? { 'Authorization': `Bearer ${customToken}` } : {}),
             ...options.headers,
         },
     };
