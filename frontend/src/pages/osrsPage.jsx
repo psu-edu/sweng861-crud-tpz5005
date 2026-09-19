@@ -183,7 +183,7 @@ export default function OSRSPage(user, setUser) {
         }
     };
 
-    
+
     // Gets all the current registered IDs int he OSRS
     // database
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
@@ -194,8 +194,12 @@ export default function OSRSPage(user, setUser) {
                 setCurrentIds(data);
             })
             .catch(error => {
-                console.error('Failed to fetch OSRS IDs', error);
-                setErrorMsg(error.message);
+                if (error.message.includes('No IDs were found')) {
+                setCurrentIds(null); 
+                } else {
+                    console.error('Failed to fetch OSRS IDs', error);
+                    setErrorMsg(error.message);
+                }
             });
     };
 
