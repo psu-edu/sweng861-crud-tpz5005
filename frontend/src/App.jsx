@@ -11,7 +11,9 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 
+/***********************************************/
 export default function App() {
+/***********************************************/
     // for the welcome banner
     const [user, setUser] = useState(null);
     //For keeping track of tabs
@@ -29,19 +31,20 @@ export default function App() {
         }     
     }
 
-    //------------------------------------------/
-    useEffect(() => { 
-    //------------------------------------------/
-        console.log("App -- useEffect -- user");
-        console.log("user statue: ", user?.user);
+    // //------------------------------------------/
+    // useEffect(() => { 
+    // //------------------------------------------/
+    //     console.log("App -- useEffect -- user");
+    //     console.log("user statue: ", user?.user);
 
-    }, [user]);
+    // }, [user]);
 
     //------------------------------------------/
     useEffect(() => {
     //------------------------------------------/
         // Handler for expired/unauthorized requests
         const handleUnauthorized = () => {
+            localStorage.removeItem('token');
             setUser(null); // Clear stale user state
             setTabIndex(0); // Redirect to Login tab
             setSessionMessage("Session expired or unauthorized. Please log in again.");
@@ -70,7 +73,7 @@ export default function App() {
                     p: 2, 
                     borderBottom: 1, 
                     borderColor: 'divider',
-                    textAlign: 'center' // Optional: centers the title nicely
+                    textAlign: 'center' 
                 }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                         CRUD Project
@@ -135,6 +138,7 @@ export default function App() {
                     <LoginPage
                         user={user}
                         setUser={setUser}
+                        onLoginSuccess={() => setTabIndex(1)}
                     />
                 </div>
                 <div hidden= {tabIndex !== 1}>
