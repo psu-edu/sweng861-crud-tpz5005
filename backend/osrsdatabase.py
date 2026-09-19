@@ -39,7 +39,6 @@ def init_osrs_db():
         """)
         connection.commit()
 
-
 # Create
 #-----------------------------------------------#
 def create_item(item_id: int, 
