@@ -5,7 +5,7 @@ import { apiClient } from '../apiClient';
 import { useLanguage } from '../Language';
 
 /***********************************************/
-export default function LoginPage({user, setUser}) {
+export default function LoginPage({user, setUser, onLoginSuccess}) {
 /***********************************************/
     //User login data
     const [userData, setUserData] = useState(null);
@@ -46,6 +46,14 @@ export default function LoginPage({user, setUser}) {
             });
     }, []);
 
+    //------------------------------------------/
+    useEffect(() => {
+    //------------------------------------------/
+        console.log("clearing token");
+        // Clear previous custom tokens
+        localStorage.removeItem('token');
+    }, []);
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
     const handleCustomLogin = async (e) => {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
@@ -72,14 +80,21 @@ export default function LoginPage({user, setUser}) {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
             });
-            
-            setUserData(data);
 
-            // Set the property
-            setUser(prev => ({
-                ...(prev || {}),
-                user: data.user.name || data.user.username
-            }));
+            // if it is authenticated
+            if(data.authenticated && data.access_token) {
+                localStorage.setItem('token', data.access_token);
+                setUserData(data);
+
+                //Kick it up to the Tabs
+                setUser(previousState =>{
+                    return {
+                        ...previousState,
+                        user: data.user.username
+                    };
+                });
+            }
+      
             setErrorMsg(null); // Clear errors
 
         } catch (error) {
