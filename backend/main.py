@@ -1,10 +1,12 @@
 import os
 import logging
-from fastapi import Depends, FastAPI, Request, HTTPException, status, Body, APIRouter
+from fastapi import Depends, FastAPI, Request, Response, HTTPException, status, Body, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
 import uvicorn
 import pprint
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -19,19 +21,18 @@ from cachetools.keys import hashkey
 
 from database import handle_user_login_data, init_db, print_database_info, get_data_field
 from osrsdatabase import init_osrs_db, create_item, read_item, update_item, delete_item, get_all_ids, delete_all_items
+from custom_auth import valid_user, create_jwt_token, SECRET_KEY, ALGORITHM
 
 load_dotenv() # load keys into env
 
 init_db()  # Initialize the database
 init_osrs_db() # initialize the osrs database
 
-
 # Create rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-# Create a cache 50 items, 60 second expiration
-#price_cache = TTLCache(maxsize=50, ttl=60)
-#id_cache = TTLCache(maxsize=50, ttl=60)
+# Security object for custom authentication
+security = HTTPBearer(auto_error=False)
 
 # A gateway for OSRS database specific endpoints
 router = APIRouter(
@@ -89,9 +90,20 @@ oauth.register(
 
 # Authentication verification helper function
 #-------------------------------------------------------------------#
-async def require_auth(request: Request) -> dict:
+async def require_auth(request: Request,
+                       auth: HTTPAuthorizationCredentials = Depends(security) ) -> dict:
 #-------------------------------------------------------------------#
-    # get the user info
+    # First check for a custom authentication token
+    if auth and auth.credentials:
+        try:
+            payload = jwt.decode(auth.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            username = payload.get("sub")
+            if username:
+                return {"user": username, "auth_type": "custom_jwt"}
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Invalid JWT token")
+    
+    # If no custom token, check for GitHub
     user = request.session.get("user")
 
     # if its null/failure throw an error
@@ -169,7 +181,7 @@ async def validate_data(data):
     return True
 
 
-#################################################
+#####################################################################
 
 
 # Service Provider login
@@ -237,6 +249,47 @@ async def auth_callback(request: Request):
     except Exception as error:
         raise HTTPException(status_code=400, detail="ERROR: Authentication failed")
 
+    
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@app.post("/auth/custom")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+async def login_custom(response: Response, user_data: dict):
+    username = user_data.get("username")
+    password = user_data.get("password")
+    
+    # Check the credentials
+    if not valid_user(username, password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+        
+    # Generate a token
+    token = create_jwt_token(username)
+    
+    # Set cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {token}",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=3600
+    )
+    
+    return {
+        "authenticated": True,
+        "user": {"username": username},
+        "access_token": token,
+        "token_type": "bearer"
+    }
+
+
+# Logout user
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@app.get("/auth/logout")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="https://localhost:3000/")
+
 
 # Get active user data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -247,15 +300,6 @@ async def get_active_user(request: Request):
     if not user:
         return {"authenticated": False}
     return {"authenticated": True, "user": user}
-
-
-# Logout user
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-@app.get("/auth/logout")
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-async def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse(url="https://localhost:3000/")
 
 
 # Authentication required
@@ -322,9 +366,13 @@ async def get_item_price(user: dict = Depends(require_auth)):
         name = item_data.get("name")
         id = item_data.get("id")
         price = item_data.get("value")
+        current_user = user.get("username") or user.get("user")
         
         # insert it into the database
-        create_item(item_id=id, item_name=name, item_value=price)
+        create_item(item_id=id, 
+                    item_name=name, 
+                    item_value=price,
+                    created_by=current_user)
 
         # print("---------- data INFO ----------")
         # pprint.pprint(item_data)
@@ -353,9 +401,16 @@ def osrs_database_create(request: Request,
                          item_name: str = Body(...), 
                          item_value:int = Body(...),
                          user: dict = Depends(require_auth)):
+
+    print("---------- user INFO ----------")
+    pprint.pprint(user)
+    print("----------------------------------")
+
+    created_by = user.get("username") or user.get("user")
+
     try:
         # Create the item
-        create_item(item_id, item_name, item_value)
+        create_item(item_id, item_name, item_value, created_by)
 
     # If the ID already exists
     except sqlite3.IntegrityError:
@@ -388,10 +443,17 @@ def osrs_database_read(request: Request,
                        item_id: int, 
                        user: dict = Depends(require_auth)):
     item = read_item(item_id)
+    current_user = user.get("username") or user.get("user")
 
     # make sure it exists
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found in database")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="This item does not exist or has been deleted.")
+    
+    # Check to make sure the item is created by the current session user
+    if item["created_by"] != current_user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You are not authorized to view this item.")
     
     return item 
 
@@ -461,11 +523,18 @@ def osrs_database_delete(request: Request,
                          user: dict = Depends(require_admin)):
     
     # clear the entire database
-    delete_all_items()
+    delete_count = delete_all_items()
+
+    # If the database was empty, throw an exception
+    if delete_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Database is already empty. No items were deleted."
+            )
 
     return {
         "status": "success",
-        "message": "OSRS database has been cleared"
+        "message": f"OSRS database cleared successfully. {delete_count} items removed.",
     }
 
 
@@ -498,7 +567,7 @@ def print_database(user: dict = Depends(require_auth)):
     return print_database_info()
 
 
-#################################################
+#####################################################################
 
 
 # Launch the backend server apon startup of the application
@@ -521,8 +590,8 @@ if __name__ == "__main__":
 
     # original
     # uvicorn.run("main:app", 
-    #                 host=HOST, 
-    #                 port=PORT, 
-    #                 reload=True,
-    #                 ssl_certfile="cert.pem",
-    #                 ssl_keyfile="key.pem")
+    #             host=HOST, 
+    #             port=PORT, 
+    #             reload=True,
+    #             ssl_certfile="cert.pem",
+    #             ssl_keyfile="key.pem")
