@@ -40,6 +40,32 @@ export default function OSRSPage(user, setUser) {
     //Debug error message
     const [errorMsg, setErrorMsg] = useState(null);
 
+
+    // This is triggered whenever the 'user' state changes
+    // It was made specifically for the custom login
+    //------------------------------------------/
+    useEffect(() => {
+    //------------------------------------------/
+    // Only run if a user is logged in
+    if (!user) return;
+
+    const fetchOSRSData = async () => {
+        try {
+            const price = await apiClient('/api/runescape/price');
+            const ids = await apiClient('/api/osrs/database/ids');
+            
+            // Set your component state here
+            setgeItemData(price);
+            setCurrentIds(ids);   
+        } catch (err) {
+            console.error('Failed to fetch OSRS data:', err);
+        }
+    };
+
+    fetchOSRSData();
+    }, [user]);
+
+
     // Gets the price of a GE item in OSRS
     // @info: This endpoint requires authentication
     //------------------------------------------/
@@ -55,6 +81,7 @@ export default function OSRSPage(user, setUser) {
                 setErrorMsg(error.message);
             });
     }, []);
+
 
     // Get IDS on launch
     //------------------------------------------/
@@ -131,13 +158,6 @@ export default function OSRSPage(user, setUser) {
         }
     };
 
-    // //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
-    // const handleViewDeleteStatus = async ( evnt) => {
-    // //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
-    //     evnt.preventDefault();
-    //     setShowDeleteStatus(true);
-    // }
-
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
     const handleDeleteAll = async (evnt) => {
@@ -163,6 +183,7 @@ export default function OSRSPage(user, setUser) {
         }
     };
 
+    
     // Gets all the current registered IDs int he OSRS
     // database
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
