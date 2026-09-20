@@ -1,7 +1,37 @@
 {
+  "name": "sweng861-crud-tpz5005",
+  "version": "1.0.0",
+  "description": "Thomas Zimmerman SWENG861 - Software Construction",
+  "main": "index.js",
+  "scripts": {
+    "backend": "python backend/main.py",
+    "start": "vite",
+    "start-all": "concurrently \"npm run start\" \"npm run backend\"",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/material": "^9.4.0"
-  }
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-basic-ssl": "^1.1.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^10.0.5",
+    "vite": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/psu-edu/sweng861-crud-tpz5005.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/psu-edu/sweng861-crud-tpz5005/issues"
+  },
+  "homepage": "https://github.com/psu-edu/sweng861-crud-tpz5005#readme"
 }
