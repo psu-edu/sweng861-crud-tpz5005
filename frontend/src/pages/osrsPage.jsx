@@ -6,7 +6,7 @@ import { apiClient } from '../apiClient';
 import { useLanguage } from '../Language';
 
 /***********************************************/
-export default function OSRSPage(user, setUser) {
+export default function OSRSPage({user, setUser}) {
 /***********************************************/
 
     //OSRS GE item price data
@@ -54,43 +54,16 @@ export default function OSRSPage(user, setUser) {
             const price = await apiClient('/api/runescape/price');
             const ids = await apiClient('/api/osrs/database/ids');
             
-            // Set your component state here
             setgeItemData(price);
             setCurrentIds(ids);   
         } catch (err) {
             console.error('Failed to fetch OSRS data:', err);
+            setErrorMsg(err.message);
         }
     };
 
     fetchOSRSData();
     }, [user]);
-
-
-    // Gets the price of a GE item in OSRS
-    // @info: This endpoint requires authentication
-    //------------------------------------------/
-    useEffect(() => { 
-    //------------------------------------------/
-        apiClient('/api/runescape/price')
-            .then(data => {
-                setgeItemData(data);
-                fetchCurrentIDs();
-            })
-            .catch(error => {
-                console.error('Failed to fetch "health" data:', error);
-                setErrorMsg(error.message);
-            });
-    }, []);
-
-
-    // Get IDS on launch
-    //------------------------------------------/
-    useEffect(() => { 
-    //------------------------------------------/
-        fetchCurrentIDs();
-    }, []);
-
-    /////////////////////////////////////////////
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/
     const handleCreateItem = async (evnt) => {
@@ -110,6 +83,14 @@ export default function OSRSPage(user, setUser) {
                 body: JSON.stringify(payload)
             });
             setCreateStatus(data);
+            setShowCreateStatus(true);
+            
+            //new
+            // Clear inputs on success
+            setNewItemId('');
+            setNewItemName('');
+            setNewItemValue('');
+
             fetchCurrentIDs();
         } catch (error) {
             console.error('Failed to create item:', error);
@@ -129,6 +110,7 @@ export default function OSRSPage(user, setUser) {
 
             //Set the delete response status
             setReadStatus(data);
+            setShowReadStatus(true);
             // Make sure to update the ids
             fetchCurrentIDs();
         } catch (error) {
@@ -149,6 +131,8 @@ export default function OSRSPage(user, setUser) {
 
             //Set the delete response status
             setDeleteStatus(data);
+            setShowDeleteStatus(true);
+            setItemToDelete(''); // Clear delete input
             // Make sure to update the ids
             fetchCurrentIDs();
         } catch (error) {
