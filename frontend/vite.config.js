@@ -9,4 +9,8 @@ export default defineConfig({
     strictPort: true,
     https: true,
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+  },
 });
