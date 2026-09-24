@@ -49,7 +49,6 @@ export default function LoginPage({user, setUser, onLoginSuccess}) {
     //------------------------------------------/
     useEffect(() => {
     //------------------------------------------/
-        console.log("clearing token");
         // Clear previous custom tokens
         localStorage.removeItem('token');
     }, []);
