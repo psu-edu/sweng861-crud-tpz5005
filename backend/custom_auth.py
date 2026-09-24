@@ -5,7 +5,8 @@ import os
 
 
 # JWT Settings (Keep your secret key in your .env file in a real app!)
-SECRET_KEY = os.getenv("CUSTOM_JWT_KEY")
+# SECRET_KEY = os.getenv("CUSTOM_JWT_KEY") # original
+SECRET_KEY = os.getenv("CUSTOM_JWT_KEY", "dev_default_secret_key_123") # ADDED FOR UNIT TESTING
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
