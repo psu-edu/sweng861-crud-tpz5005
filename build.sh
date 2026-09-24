@@ -51,4 +51,15 @@ echo "click the link 'https://localhost:3000/'"
 echo "------------------------------------------"
 
 
+## To build for development
+## In the root directory
+# python3 -m venv .venv
+# source .venv/binactivate
+# pip install --upgrade pip
+# pip install -r requirements.txt
+# pip install fastapi uvicorn
+
+## cd into /frontend 
+# npm install
+# npm run start-all
 
