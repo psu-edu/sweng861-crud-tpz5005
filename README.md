@@ -62,4 +62,4 @@ docker-compose exec backend python -m pytest unitTest/
 <From the root directory>
 docker-compose build frontend
 docker-compose up -d frontend
-docker-compose exec frontend nom run test-frontend
+docker-compose exec frontend npm run test-frontend
