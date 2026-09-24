@@ -20,3 +20,6 @@ httpx
 slowapi
 dotenv
 cachetools
+pytest
+pytest-asyncio
+locust
