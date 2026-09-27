@@ -52,14 +52,17 @@ To open the project, hold Control and click on the 'https://localhost:3000/' lin
 If you are presented with a "certificate could not be verified" page, click the 'Proceed to localhost' button to continue 
 to the application.
 
+## To run all tests
+<From the root direcotry>
+cd frontend/
+npm run test-all
+
 ## To run backend Unit Tests
 <From the root direcotry>
-docker-compose build backend
-docker-compose up -d 
-docker-compose exec backend python -m pytest unitTest/
+cd frontend/
+npm run test-backend
 
 ## To Run frontend Unit Test
 <From the root directory>
-docker-compose build frontend
-docker-compose up -d frontend
-docker-compose exec frontend npm run test-frontend
+cd frontend/
+npm run test-frontend
