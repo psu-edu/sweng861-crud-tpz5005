@@ -395,7 +395,7 @@ async def get_item_price(user: dict = Depends(require_auth)):
 @router.post("/create",
              summary="OSRS database Create endpoint")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-@limiter.limit("1/second") # Only 1 create every second
+#@limiter.limit("1/second") # Only 1 create every second
 def osrs_database_create(request: Request,
                          item_id: int = Body(...), 
                          item_name: str = Body(...), 
@@ -465,7 +465,7 @@ def osrs_database_read(request: Request,
 @router.put("/update/{item_id}",
             summary="OSRS database Update endpoint")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-@limiter.limit("1/5seconds") # Only 1 update every 5 seconds
+#@limiter.limit("1/5seconds") # Only 1 update every 5 seconds
 def osrs_database_update(request: Request,
                          item_id: int, 
                          fields: dict = Body(...),
