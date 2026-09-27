@@ -55,14 +55,17 @@ to the application.
 ## To run all tests
 <From the root direcotry>
 cd frontend/
+
 npm run test-all
 
 ## To run backend Unit Tests
 <From the root direcotry>
 cd frontend/
+
 npm run test-backend
 
 ## To Run frontend Unit Test
 <From the root directory>
 cd frontend/
+
 npm run test-frontend
