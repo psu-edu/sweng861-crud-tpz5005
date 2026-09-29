@@ -70,7 +70,9 @@ jobs:
         run: DEBUG_PRINT_LIMIT=0 npx jest --env=jsdom
 
       - name: Run Backend Unit Tests (Pytest)
-        run: python -m pytest unitTest/
+        run: python -m pytest backend/unitTest/
+        env:
+            PYTHONPATH: ./backend
         
       # 4) Package State: Build/Tag Docker
       - name: Set up Docker Buildx
