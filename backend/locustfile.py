@@ -24,7 +24,7 @@ def generate_locust_token(username: str = "student") -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 # to run
-#locust --headless --users 50 --spawn-rate 5 --run-time 20s --host https://localhost:8000
+#locust --headless --users 100 --spawn-rate 10 --run-time 20s --host https://localhost:8000
 
 # Simulate a user
 class OSRSUser(HttpUser):
@@ -42,7 +42,7 @@ class OSRSUser(HttpUser):
         token = generate_locust_token(username="student")
         self.client.headers.update({"Authorization": f"Bearer {token}"})
 
-    @task(3)
+    @task
     def create_item(self):
         # we need to generate random IDs otherwise the database 
         # will throw errors
@@ -60,7 +60,7 @@ class OSRSUser(HttpUser):
         if response.status_code in (200, 201):
             self.created_item_ids.append(item_id)
 
-    @task(2)
+    @task
     def update_item(self):
         if not self.created_item_ids:
             return
