@@ -54,7 +54,7 @@ echo "------------------------------------------"
 ## To build for development
 ## In the root directory
 # python3 -m venv .venv
-# source .venv/binactivate
+# source .venv/bin/activate
 # pip install --upgrade pip
 # pip install -r requirements.txt
 # pip install fastapi uvicorn
