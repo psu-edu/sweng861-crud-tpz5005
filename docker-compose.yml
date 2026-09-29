@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  
+
   backend:
     build:
       context: .
@@ -12,10 +12,28 @@ services:
       - .env
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
     environment:
       - VITE_API_URL=https://localhost:8000
+
+  prometheus:
+    image: prom/prometheus
+    container_name: osrs-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: osrs-grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
