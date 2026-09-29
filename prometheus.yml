@@ -1,0 +1,21 @@
+global:
+  # How often Prometheus asks our application for its metrics.
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "osrs-backend"
+
+    # FastAPI exposes Prometheus metrics at /metrics.
+    metrics_path: /metrics
+
+    # need this for https
+    scheme: https
+
+    tls_config:
+      insecure_skip_verify: true
+
+    static_configs:
+      - targets:
+          # "backend" is the Docker Compose service name.
+          # Prometheus can reach the backend using this hostname.
+          - "backend:8000"
