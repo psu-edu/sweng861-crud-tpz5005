@@ -1,11 +1,13 @@
 import os
 import logging
+import time
 from fastapi import Depends, FastAPI, Request, Response, HTTPException, status, Body, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from prometheus_client import Counter, Histogram, make_asgi_app
 import jwt
 import uvicorn
 import pprint
@@ -22,6 +24,9 @@ from cachetools.keys import hashkey
 from database import handle_user_login_data, init_db, print_database_info, get_data_field
 from osrsdatabase import init_osrs_db, create_item, read_item, update_item, delete_item, get_all_ids, delete_all_items
 from custom_auth import valid_user, create_jwt_token, SECRET_KEY, ALGORITHM
+from metrics import REQUEST_LATENCY, REQUEST_TOTAL, ITEMS_CREATED_TOTAL, metrics_app
+
+from logger import logger, log_event
 
 load_dotenv() # load keys into env
 
@@ -50,6 +55,9 @@ app = FastAPI(
     description="A front and backend server used to implement weekly assignments",
     version="0.3"
 )
+
+# For metrics
+app.mount("/metrics", metrics_app)
 
 # set up a limiter for log in
 app.state.limiter = limiter
@@ -86,6 +94,72 @@ oauth.register(
     api_base_url="https://api.github.com/",
     client_kwargs={"scope": "user:email"})
 
+@app.middleware("http")
+#-------------------------------------------------------------------#
+async def prometheus_metrics(request: Request, call_next):
+#-------------------------------------------------------------------#
+    # start the timer
+    start_time = time.perf_counter()
+
+    try:
+        # call the endpoint
+        response = await call_next(request)
+    except Exception:
+        # Record failed requests 
+        route = request.scope.get("route")
+
+        # if the route was identified
+        if route:
+            route_path = route.path
+        else:
+            route_path = request.url.path
+
+        # calculat the time duration of the endpoint
+        # being called
+        duration = time.perf_counter() - start_time
+
+        # add it to prometheus
+        REQUEST_LATENCY.labels(
+            method=request.method,
+            route=route_path
+        ).observe(duration)
+
+        # record the request error
+        REQUEST_TOTAL.labels(
+            method=request.method,
+            route=route_path,
+            status="500"
+        ).inc()
+
+        # remember to raise an exception for fastAPI
+        raise
+
+    # FastAPI is finished with the request, so we can now determine who 
+    # handles it
+    route = request.scope.get("route")
+
+    if route:
+        route_path = route.path
+    else:
+        route_path = request.url.path
+
+    # Again calculate the time spent processing the request
+    duration = time.perf_counter() - start_time
+
+    # Record request latency
+    REQUEST_LATENCY.labels(
+        method=request.method,
+        route=route_path
+    ).observe(duration)
+
+    # Record request count
+    REQUEST_TOTAL.labels(
+        method=request.method,
+        route=route_path,
+        status=str(response.status_code)
+    ).inc()
+
+    return response
 
 
 # Authentication verification helper function
@@ -192,9 +266,19 @@ async def validate_data(data):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 @limiter.limit("5/minute") # Only 5 logins per minute
 async def login(request: Request):
+    req_id = getattr(request.state, "request_id", None)
+
     # This redirect origin MUST match the frontend origin, otherwise 
     # the cookies will NOT SET for the frontend!!!!!
     redirect_uri = "https://localhost:8000/auth/callback" 
+
+    log_event(
+        level="INFO", 
+        event_name="github_auth", 
+        message="GitHub OAuth2 Login", 
+        request_id=req_id
+    )
+    
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 
@@ -259,6 +343,14 @@ async def login_custom(response: Response, user_data: dict):
     
     # Check the credentials
     if not valid_user(username, password):
+        # Log failed login attempts
+        log_event(
+            level="WARNING",
+            event_name="custom_login_failed",
+            message=f"Failed custom login attempt for user '{username}'",
+            username=username,
+            auth_provider="custom"
+        )
         raise HTTPException(status_code=401, detail="Invalid username or password")
         
     # Generate a token
@@ -272,6 +364,15 @@ async def login_custom(response: Response, user_data: dict):
         secure=True,
         samesite="lax",
         max_age=3600
+    )
+
+    # Log a successful login 
+    log_event(
+        level="INFO",
+        event_name="auth_login_success",
+        message=f"User '{username}' logged in successfully",
+        username=username,
+        auth_provider="custom"
     )
     
     return {
@@ -287,7 +388,21 @@ async def login_custom(response: Response, user_data: dict):
 @app.get("/auth/logout")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 async def logout(request: Request):
+    req_id = getattr(request.state, "request_id", None)
+    user = request.session.get("user")
+    username = user.get("username") if user else "unknown"
+
     request.session.clear()
+
+    # Log the logout
+    log_event(
+        level="INFO",
+        event_name="auth_logout",
+        message=f"User '{username}' logged out",
+        request_id=req_id,
+        username=username
+    )
+
     return RedirectResponse(url="https://localhost:3000/")
 
 
@@ -314,13 +429,6 @@ def get_hello(request: Request, user: dict = Depends(require_auth)):
     user_email = get_data_field(user_id=1, field_name="email")
 
     return {"message": f"Hello, {username}@{user_email}!"}
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-@app.get("/health")
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-def health_status(user: dict = Depends(require_auth)):
-    return {"status": "ok"}
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -402,15 +510,28 @@ def osrs_database_create(request: Request,
                          item_value:int = Body(...),
                          user: dict = Depends(require_auth)):
 
-    # print("---------- user INFO ----------")
-    # pprint.pprint(user)
-    # print("----------------------------------")
-
+    req_id = getattr(request.state, "request_id", None)
     created_by = user.get("username") or user.get("user")
 
     try:
         # Create the item
         create_item(item_id, item_name, item_value, created_by)
+
+        ITEMS_CREATED_TOTAL.labels(
+            created_by=created_by
+        ).inc()
+
+        # Log the successful creation
+        log_event(
+            level="INFO", 
+            event_name="osrs_item_created",
+            message=f"Created item ID {item_id} ({item_name})",
+            request_id=req_id,
+            item_id=item_id,
+            item_name=item_name,
+            item_value=item_value,
+            created_by=created_by
+        )
 
     # If the ID already exists
     except sqlite3.IntegrityError:
@@ -420,6 +541,15 @@ def osrs_database_create(request: Request,
         )
     # if something unknown happens
     except sqlite3.Error as err:
+        # Log an error when creating
+        log_event(
+            level="ERROR", 
+            event_name="database_error", 
+            message=f"Database error during item creation: {str(err)}", 
+            request_id=req_id, 
+            error=str(err)
+        )
+
         raise HTTPException(
             status_code=500,
             detail="Unexpected Error"
@@ -442,18 +572,45 @@ def osrs_database_create(request: Request,
 def osrs_database_read(request: Request,
                        item_id: int, 
                        user: dict = Depends(require_auth)):
+    req_id = getattr(request.state, "request_id", None)
     item = read_item(item_id)
     current_user = user.get("username") or user.get("user")
 
     # make sure it exists
     if not item:
+        # Log a missing item
+        log_event(
+            level="WARNING",
+            event_name="osrs_item_not_found",
+            message=f"Item {item_id} was requested but does not exist",
+            request_id=req_id,
+            item_id=item_id
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail="This item does not exist or has been deleted.")
     
     # Check to make sure the item is created by the current session user
     if item["created_by"] != current_user:
+        # log an unauthorized read
+        log_event(
+            level="WARNING",
+            event_name="osrs_unauthorized_access",
+            message=f"User '{current_user}' attempted unauthorized access to item ID {item_id}",
+            request_id=req_id,
+            item_id=item_id,
+            requested_by=current_user
+        )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="You are not authorized to view this item.")
+
+    log_event(
+        level="INFO",
+        event_name="osrs_item_read",
+        message=f"Retrieved item ID: {item_id}",
+        request_id=req_id,
+        item_id=item_id,
+        requested_by=current_user
+    )
     
     return item 
 
@@ -470,6 +627,8 @@ def osrs_database_update(request: Request,
                          item_id: int, 
                          fields: dict = Body(...),
                          user: dict = Depends(require_auth)):
+    req_id = getattr(request.state, "request_id", None)
+    current_user = user.get("username") or user.get("user")
     current_item = read_item(item_id)
 
     # make sure it exists
@@ -478,6 +637,17 @@ def osrs_database_update(request: Request,
 
     # if it does exist, update the data
     update_item(item_id, fields)
+
+    # log an update
+    log_event(
+        level="INFO",
+        event_name="osrs_item_updated",
+        message=f"Updated item ID: {item_id}",
+        request_id=req_id,
+        item_id=item_id,
+        updated_fields=list(fields.keys()),
+        updated_by=current_user
+    )
 
     return {
         "status": "success",
@@ -495,6 +665,8 @@ def osrs_database_update(request: Request,
 def osrs_database_delete(request: Request,
                          item_id: int, 
                          user: dict = Depends(require_auth)):
+    req_id = getattr(request.state, "request_id", None)
+    current_user = user.get("username") or user.get("user")
     current_item = read_item(item_id)
 
     # it it doesnt exist, throw an error
@@ -506,6 +678,17 @@ def osrs_database_delete(request: Request,
 
     # if it does, delete it
     delete_item(item_id)
+
+    # log a delete
+    log_event(
+        level="INFO",
+        event_name="osrs_item_deleted",
+        message=f"Deleted item ID: {item_id}",
+        request_id=req_id,
+        item_id=item_id,
+        deleted_by=current_user
+    )
+
     return {
         "status": "success",
         "message": "Item successfully deleted"
@@ -522,6 +705,8 @@ def osrs_database_delete(request: Request,
 def osrs_database_delete(request: Request,
                          user: dict = Depends(require_admin)):
     
+    req_id = getattr(request.state, "request_id", None)
+    admin_user = user.get("username") or user.get("user")
     # clear the entire database
     delete_count = delete_all_items()
 
@@ -531,6 +716,15 @@ def osrs_database_delete(request: Request,
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Database is already empty. No items were deleted."
             )
+
+    log_event(
+        level="WARNING",
+        event_name="osrs_delete_all",
+        message=f"Cleared OSRS database. {delete_count} items removed.",
+        request_id=req_id,
+        items_removed=delete_count,
+        action_by=admin_user
+    )
 
     return {
         "status": "success",
@@ -566,6 +760,26 @@ def osrs_database_registered_ids(request: Request,
 def print_database(user: dict = Depends(require_auth)):
     return print_database_info()
 
+# Assignment 6 endpoint
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@app.get("/health")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+def health_status(user: dict = Depends(require_auth)):
+    return {"status": "UP", "db": "UP"}
+
+# Assignment 6 endpoint
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@app.get("/health/live")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+def health_status(user: dict = Depends(require_auth)):
+    return {"status": "UP", "db": "UP"}
+
+# Assignment 6 endpoint
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+@app.get("/health/ready")
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+def health_status(user: dict = Depends(require_auth)):
+    return {"status": "UP", "db": "UP"}
 
 #####################################################################
 
